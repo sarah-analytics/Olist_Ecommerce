@@ -68,8 +68,8 @@ Retention is present but moderate, showing opportunities for re-engagement.
 ---
 
 ## 👋 About  
-KR/EN bilingual analyst focused on clean SQL, marketplace analytics,  
-and concise dashboard storytelling.
+KR/EN bilingual analyst with strengths in clean SQL,
+marketplace analytics, and concise, insight-driven dashboards.
 
 ---
 
