@@ -1,11 +1,21 @@
-/* KPI #02 — Daily Revenue
-   Purpose: daily revenue */
+/* =========================================================
+   KPI #02 — Daily Revenue
+
+   Type         : Base
+   Grain        : 1 row per day
+   Time Basis   : orders.order_purchase_timestamp
+   Date Filter  : None
+   Valid Orders : orders joined with order_payments (no additional filtering)
+
+   Output       : order_date, daily_revenue
+   Notes        : Gross revenue based on payment_value
+   ========================================================= */
 
 SELECT
-    DATE(o.order_purchase_timestamp) AS order_date,   -- date
-    ROUND(SUM(p.payment_value), 2) AS daily_revenue   -- revenue
-FROM orders AS o
-JOIN order_payments AS p
-      ON o.order_id = p.order_id
+    CAST(o.order_purchase_timestamp AS DATE) AS order_date,  -- order date
+    SUM(p.payment_value) AS daily_revenue                    -- gross revenue
+FROM orders o
+JOIN order_payments p
+  ON o.order_id = p.order_id
 GROUP BY order_date
 ORDER BY order_date;
