@@ -1,112 +1,71 @@
 /* =========================================================
-   KPI #05 — Weekly Revenue & Monthly % Share
+   KPI #03 — Weekly Revenue Trend (Canonical)
 
-   - Week is defined by week_start (Monday-based)
-   - Weekly revenue is aggregated by week_start
-   - week_in_month is a display label for readability
+   Goal      : Track weekly revenue trend over time
+   Grain     : 1 row per week_start (Monday-based)
+   Revenue   : SUM(order_payments.payment_value)
+   Time Rule : Absolute DateTime Law  [>= start_ts, < end_ts)
+
+   Output
+     - week_start_date : Monday-based week bucket start date
+     - week_end_date   : week_start_date + 6 days (display only)
+     - revenue         : weekly revenue
+     - wow_pct         : week-over-week % change (NULL for first week)
    ========================================================= */
 
-WITH base AS (
+WITH params AS (
     SELECT
-        -- YYYY-MM (monthly bucket)
-        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS month,
+        TIMESTAMP('2017-01-01 00:00:00') AS start_ts,
+        TIMESTAMP('2018-01-01 00:00:00') AS end_ts
+),
 
-        -- Monday-based week start date
+base_payments AS (
+    SELECT
+        -- Monday-based week start (DATE)
         DATE_SUB(
             DATE(o.order_purchase_timestamp),
             INTERVAL WEEKDAY(o.order_purchase_timestamp) DAY
-        ) AS week_start,
+        ) AS week_start_date,
 
-        -- payment amount (one row per payment record)
+        -- Payment amount (can be multiple rows per order_id; SUM is intended)
         p.payment_value
-    FROM orders o
-    JOIN order_payments p
-      ON o.order_id = p.order_id
-    WHERE o.order_purchase_timestamp >= '2017-01-01'
-      AND o.order_purchase_timestamp <  '2018-01-01'
+    FROM orders AS o
+    JOIN order_payments AS p
+      ON p.order_id = o.order_id
+    JOIN params AS x
+      ON o.order_purchase_timestamp >= x.start_ts
+     AND o.order_purchase_timestamp <  x.end_ts
 ),
 
 weekly_rev AS (
     SELECT
-        month,
-        week_start,
+        week_start_date,
         SUM(payment_value) AS revenue
-    FROM base
-    GROUP BY month, week_start
-)
-
-SELECT
-    month,
-
-    -- Week number within month (label only)
-    DENSE_RANK() OVER (
-        PARTITION BY month
-        ORDER BY week_start
-    ) AS week_in_month,
-
-    week_start,
-
-    -- Weekly revenue
-    ROUND(revenue, 2) AS revenue,
-
-    -- % share of weekly revenue within the month
-    ROUND(
-        revenue * 100.0
-        / SUM(revenue) OVER (PARTITION BY month),
-        2
-    ) AS pct
-FROM weekly_rev
-ORDER BY month, week_start;
-
-
-WITH base AS (
-    SELECT
-        -- YYYY-MM (monthly bucket)
-        DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m') AS month,
-
-        -- Monday-based week start date
-        DATE_SUB(
-            DATE(o.order_purchase_timestamp),
-            INTERVAL WEEKDAY(o.order_purchase_timestamp) DAY
-        ) AS week_start,
-
-        -- payment amount (one row per payment record)
-        p.payment_value
-    FROM orders o
-    JOIN order_payments p
-      ON o.order_id = p.order_id
-    WHERE o.order_purchase_timestamp >= '2017-01-01'
-      AND o.order_purchase_timestamp <  '2018-01-01'
+    FROM base_payments
+    GROUP BY week_start_date
 ),
 
-weekly_rev AS (
+final AS (
     SELECT
-        month,
-        week_start,
-        SUM(payment_value) AS revenue
-    FROM base
-    GROUP BY month, week_start
+        week_start_date,
+        revenue,
+
+        -- Previous week's revenue for WoW calculation
+        LAG(revenue) OVER (ORDER BY week_start_date) AS prev_week_revenue
+    FROM weekly_rev
 )
 
 SELECT
-    month,
+    week_start_date,
+    DATE_ADD(week_start_date, INTERVAL 6 DAY) AS week_end_date,
 
-    -- Week number within month (label only)
-    DENSE_RANK() OVER (
-        PARTITION BY month
-        ORDER BY week_start
-    ) AS week_in_month,
-
-    week_start,
-
-    -- Weekly revenue
     ROUND(revenue, 2) AS revenue,
 
-    -- % share of weekly revenue within the month
+    -- WoW % change (Absolute Ratio Law)
     ROUND(
-        revenue * 100.0
-        / SUM(revenue) OVER (PARTITION BY month),
+        (revenue - prev_week_revenue)
+        / NULLIF(prev_week_revenue, 0) * 100.0,
         2
-    ) AS pct
-FROM weekly_rev
-ORDER BY month, week_start;
+    ) AS wow_pct
+FROM final
+ORDER BY week_start_date;
