@@ -1,16 +1,14 @@
 /* =========================================================
-   KPI #03 — Weekly Revenue Trend (Canonical)
+   KPI #03 — Weekly Revenue Trend
 
-   Goal      : Track weekly revenue trend over time
-   Grain     : 1 row per week_start (Monday-based)
-   Revenue   : SUM(order_payments.payment_value)
-   Time Rule : Absolute DateTime Law  [>= start_ts, < end_ts)
+   Type         : Derived
+   Grain        : 1 row per week_start_date (Monday-based)
+   Time Basis   : orders.order_purchase_timestamp
+   Date Filter  : [start_ts, end_ts)
+   Valid Orders : orders joined with order_payments (no additional filtering)
 
-   Output
-     - week_start_date : Monday-based week bucket start date
-     - week_end_date   : week_start_date + 6 days (display only)
-     - revenue         : weekly revenue
-     - wow_pct         : week-over-week % change (NULL for first week)
+   Output       : week_start_date, week_end_date, revenue, wow_pct
+   Notes        : Week-over-week revenue trend
    ========================================================= */
 
 WITH params AS (
