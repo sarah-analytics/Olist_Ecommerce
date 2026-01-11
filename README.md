@@ -1,152 +1,160 @@
-# Olist E-commerce Analytics Project
+# 📊 Olist E-commerce Analytics Project
 
-## 👋 About
-KR/EN bilingual analyst with strengths in clean SQL,
+👋 About
+
+KR/EN bilingual data analyst with strengths in clean, production-style SQL,
 marketplace analytics, and concise, insight-driven dashboards.
 
----
-
-## 📌 Project Overview
-This project analyzes Brazilian e-commerce transaction data from Olist.
-The goal is to design **operationally reliable KPIs**, structure them using
-a **dbt-ish SQL layering approach**, and visualize insights through Tableau.
-
-This repository emphasizes:
-- Metric definition before implementation
-- Reusable SQL models
-- Dashboard-aligned KPI design
-- Reproducible analytics workflows
+This repository serves as an analytics portfolio project demonstrating how
+e-commerce KPIs are designed, standardized, and implemented using MySQL.
+The focus is on clear metric definitions, consistent logic, and
+analysis-ready outputs for BI and stakeholder reporting.
 
 ---
 
-## 📂 Dataset
-- Source: Olist Brazilian E-commerce Dataset
-- Core tables:
-  - orders
-  - order_items
-  - products
-  - order_payments
-  - customers
-- Time range: 2017-01-01 ~ 2018-01-01
+## 📦 Olist E-commerce KPI Pack (MySQL)
+
+This folder contains a production-style KPI SQL pack built on the
+Olist Brazilian e-commerce dataset.
+All queries are written for MySQL and designed to be reusable,
+consistent, and portfolio-ready.
 
 ---
 
-## 📊 KPIs (Dashboard-aligned)
+## 🗂 Dataset & Schema
 
-The KPIs are organized to match the Tableau dashboard flow.
-Each KPI is numbered based on operational priority and analytical depth.
+Shortened table names are used throughout the project for readability:
 
-### 1) Overview
-- KPI #01 — Daily Orders  
-- KPI #02 — Daily Revenue  
-- KPI #03 — Weekly Revenue Trend  
-- KPI #04 — Payment Type Mix  
-
----
-
-### 2) Operations
-- KPI #05 — Delivery On-time Rate  
-- KPI #06 — Average Delivery Days  
+- `orders`
+- `order_items`
+- `order_payments`
+- `products`
+- `int_customer_first_purchase`
+- `int_valid_orders_tbl`
 
 ---
 
-### 3) Merchandising
-- KPI #07 — Category Revenue Top 10  
-- KPI #08 — Best-selling Products  
+## 🧭 KPI Design Principles
 
-**Price Buckets (Derived KPIs)**
-- KPI #09 — Order Mix by Price Bucket  
-- KPI #10 — Revenue Mix by Price Bucket  
-- KPI #11 — AOV by Price Bucket  
-
----
-
-### 4) Customer
-- KPI #12 — 30-Day Repeat Purchase Retention  
-
-> The customer domain focuses on retention as the primary health metric.  
-> Additional customer KPIs (e.g., frequency, LTV) are intentionally excluded  
-> to avoid overfitting given the dataset time horizon.
+- Time filters follow the pattern `>= start_ts` and `< end_ts`
+  to avoid overlapping date ranges.
+- All rate-based KPIs use the formula  
+  `rate = target / NULLIF(base, 0) * 100.0`
+  to ensure numerical stability.
+- Each KPI explicitly defines its grain (day, week, bucket, product, customer),
+  and the grain is fixed early in the query to prevent duplication from joins.
 
 ---
 
-## KPI Metric Contracts
+## 🧾 KPI Index
 
-> All KPIs follow the **Absolute DateTime Law**  
-> Date filter rule: `>= start_date AND < end_date`
+### 📈 Volume & Revenue (Baseline)
 
-Metric Contracts define KPI logic **before SQL implementation**
-and serve as the single source of truth for metric definitions.
+1. **KPI #01 — Daily Orders**  
+   File: `kpi01_daily_order_count.sql`  
+   Output: `order_date, daily_orders`  
+   Tracks the number of distinct orders placed per day.
 
----
+2. **KPI #02 — Daily Revenue**  
+   File: `kpi02_daily_revenue.sql`  
+   Output: `order_date, daily_revenue`  
+   Revenue is defined using **recorded payments** from `order_payments`.
 
-### KPI #XX — [Human-readable Name]
-
-- Description:
-- Numerator:
-- Denominator:
-- Timestamp Basis:
-- Date Filter Rule:
-- Grain:
-- Exclusions / Filters:
-- Source Tables:
-- Notes:
+3. **KPI #03 — Weekly Revenue Trend (WoW%)**  
+   File: `kpi03_weekly_revenue_trend.sql`  
+   Output: `week_start_date, revenue, wow_pct`  
+   Weekly revenue trend using Monday-based weeks with week-over-week change.
 
 ---
 
-## 📈 Tableau Dashboard
+### 💳 Payment & Mix
 
-The dashboard is structured to reflect the KPI hierarchy and operational flow.
-Each view corresponds directly to the KPI groups defined above.
-
-### Overview
-- KPI #01 — Daily Orders  
-- KPI #02 — Daily Revenue  
-- KPI #03 — Weekly Revenue Trend  
-- KPI #04 — Payment Type Mix  
-
-### Operations
-- KPI #05 — Delivery On-time Rate  
-- KPI #06 — Average Delivery Days  
-
-### Merchandising
-- KPI #07 — Category Revenue Top 10  
-- KPI #08 — Best-selling Products  
-- KPI #09 — Order Mix by Price Bucket  
-- KPI #10 — Revenue Mix by Price Bucket  
-- KPI #11 — AOV by Price Bucket  
-
-### Customer
-- KPI #12 — 30-Day Repeat Purchase Retention  
-
-[Tableau Public / Workbook link here]  
-[Dashboard screenshots here]
+4. **KPI #04 — Payment Type Mix**  
+   File: `kpi04_payment_type_mix.sql`  
+   Output: `payment_type, revenue, revenue_pct`  
+   Analyzes revenue composition by payment method.
 
 ---
 
-## 🔍 Insights
-Key analytical findings derived from the KPIs and dashboard.
+### 🚚 Logistics & Delivery Performance
+
+5. **KPI #05 — Delivery On-time Rate**  
+   File: `kpi_05_delivery_on_time_rate.sql`  
+   Output: `on_time_rate_pct`  
+   Measures delivery reliability using delivered orders only.
+
+6. **KPI #06 — Average Delivery Days**  
+   File: `kpi_06_average_delivery_days.sql`  
+   Output: `avg_delivery_days`  
+   Diagnostic KPI measuring average time from purchase to delivery.
 
 ---
 
-## ▶️ How to Reproduce
+### 🛍 Merchandising (Category & Product)
 
-### 1) Database Setup
-- MySQL 8.x
-- Import CSV files into a dedicated schema (e.g., `olist_db`)
+7. **KPI #07 — Category Revenue Top 10**  
+   File: `kpi_07_category_revenue_top10.sql`  
+   Output: `category, revenue`  
+   Category revenue is calculated by allocating **order-level payments**
+   to categories based on each category’s **item-value share within the order**.
+   This keeps revenue definitions consistent across all revenue KPIs.
 
-### 2) SQL Execution Order
-/sql/int   → intermediate reusable models  
-/sql/mart  → final KPI queries (SELECT only)  
-/sql/tests → data validation checks  
+8. **KPI #08 — Best-selling Products (Units Sold)**  
+   File: `kpi_08_best_selling_products.sql`  
+   Output: `product_id, units_sold`  
+   Volume-based KPI identifying high-velocity products, independent of revenue.
 
-### 3) Dashboard
-- Connect Tableau to mart views or tables
-- Refresh using defined KPI date parameters
+---
+
+### 🧮 Price Bucket Analysis (Set KPIs: #09–#11)
+
+These KPIs share the **same price bucket definition** and are designed
+to be interpreted together:
+
+- #09 shows where orders concentrate
+- #10 shows where revenue concentrates
+- #11 shows efficiency (AOV) within each segment
+
+9. **KPI #09 — Order Mix by Price Bucket**  
+   File: `kpi_09_order_mix_by_price_bucket.sql`  
+   Output: `price_bucket, order_pct`
+
+10. **KPI #10 — Revenue Mix by Price Bucket**  
+    File: `kpi_10_revenue_mix_by_price_bucket.sql`  
+    Output: `price_bucket, revenue_pct`
+
+11. **KPI #11 — AOV by Price Bucket**  
+    File: `kpi_11_aov_by_price_bucket.sql`  
+    Output: `price_bucket, aov`
+
+---
+
+### 🔁 Customer Retention
+
+12. **KPI #12 — Repeat Purchase Retention (30/60/90D)**  
+    File: `kpi_12_repeat_purchase_retention_30_60_90d.sql`  
+    Output: `window_days, retention_pct`
+
+Retention is calculated using a single parameterized query with
+identical logic across multiple time windows (30, 60, and 90 days).
+
+- Denominator: customers with a first purchase within the cohort window  
+- Numerator: customers with at least one repeat purchase within the window  
+- Valid orders: completed (delivered) orders only
+
+---
+
+## 📝 Notes for Reviewers
+
+- KPI definitions are consistent across time, revenue, and mix analyses.
+- Revenue is always anchored to recorded payments.
+- Price bucket KPIs are intentionally separated but designed as a single analytical set.
+- Retention is consolidated into one query to avoid duplicated logic.
 
 ---
 
 ## 📩 Contact
-📧 sarahj0514@gmail.com  
-🔗 LinkedIn:  
-🌐 Portfolio:
+
+📧 **Email:** sarahj0514@gmail.com  
+🔗 **LinkedIn:** https://www.linkedin.com/in/your-linkedin  
+💻 **GitHub:** https://github.com/your-username
