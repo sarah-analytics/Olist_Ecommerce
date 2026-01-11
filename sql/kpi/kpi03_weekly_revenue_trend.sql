@@ -56,9 +56,8 @@ final AS (
 SELECT
     week_start_date,
     DATE_ADD(week_start_date, INTERVAL 6 DAY) AS week_end_date,
-
-    ROUND(revenue, 2) AS revenue,
-
+    revenue,
+   
     -- WoW % change (Absolute Ratio Law)
     ROUND(
         (revenue - prev_week_revenue)
