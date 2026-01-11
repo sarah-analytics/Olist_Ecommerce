@@ -7,9 +7,9 @@
    ========================================================= */
 
 SELECT
-    o.customer_unique_id,
-    MIN(o.order_purchase_timestamp) AS first_order_ts
-FROM orders AS o
-WHERE o.order_status = 'delivered'
+    customer_unique_id,
+    MIN(order_purchase_timestamp) AS first_order_ts
+FROM orders 
+WHERE order_status = 'delivered'
 GROUP BY
-    o.customer_unique_id;
+     customer_unique_id;
