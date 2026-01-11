@@ -1,14 +1,16 @@
 /* =========================================================
-   KPI #01 — Daily Order Count
+   KPI #01 — Daily Orders
 
    Type         : Base
+   Description  : Track the number of orders placed per day
+   Numerator    : Count of distinct orders
+   Denominator  : Not applicable (absolute count)
    Grain        : 1 row per day
    Time Basis   : orders.order_purchase_timestamp
-   Date Filter  : None
-   Valid Orders : orders table (no additional filtering)
-
-   Output       : order_date, order_count
-   Notes        : Overall daily volume trend / sanity check
+   Date Filter  : [start_ts, end_ts)
+   Valid Orders : All orders with valid order records
+   Output       : order_date, daily_orders
+   Notes        : Baseline volume KPI for overall business activity
    ========================================================= */
 
 SELECT
