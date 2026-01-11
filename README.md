@@ -34,6 +34,17 @@ Shortened table names are used throughout the project for readability:
 
 ---
 
+## 🗂 Project Structure
+
+All SQL files are organized under the `sql/` directory using a layered approach:
+
+- `sql/int`   : intermediate definition tables shared across KPIs  
+- `sql/kpi`   : business KPI queries  
+- `sql/mart`  : consumption-ready summary tables  
+- `sql/tests` : placeholders for future validation queries
+
+---
+
 ## 🧭 KPI Design Principles
 
 - Time filters follow the pattern `>= start_ts` and `< end_ts`
