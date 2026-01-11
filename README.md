@@ -61,7 +61,7 @@ All SQL files are organized under the `sql/` directory using a layered approach:
 
 ### 📈 Volume & Revenue (Baseline)
 
-1. **KPI #01 — Daily Orders**  
+1. **KPI #01 — Daily Order Count**  
    File: `kpi01_daily_order_count.sql`  
    Output: `order_date, daily_orders`  
    Tracks the number of distinct orders placed per day.
