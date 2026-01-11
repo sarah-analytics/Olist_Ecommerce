@@ -13,9 +13,20 @@
    Notes        : Baseline volume KPI for overall business activity
    ========================================================= */
 
+WITH params AS (
+    SELECT
+        TIMESTAMP('2017-01-01 00:00:00') AS start_ts,
+        TIMESTAMP('2018-01-01 00:00:00') AS end_ts
+)
+
 SELECT
-    CAST(o.order_purchase_timestamp AS DATE) AS order_date,  -- calendar date
-    COUNT(*) AS order_count                                  -- orders per day
-FROM orders o
-GROUP BY order_date
-ORDER BY order_date;
+    DATE(o.order_purchase_timestamp)      AS order_date,     -- day grain
+    COUNT(DISTINCT o.order_id)            AS daily_orders    -- number of orders per day
+FROM orders AS o
+JOIN params AS prm
+  ON o.order_purchase_timestamp >= prm.start_ts
+ AND o.order_purchase_timestamp <  prm.end_ts
+GROUP BY
+    DATE(o.order_purchase_timestamp)
+ORDER BY
+    order_date;
