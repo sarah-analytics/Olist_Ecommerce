@@ -19,32 +19,46 @@ params AS (
         TIMESTAMP('2017-01-01 00:00:00') AS start_ts,
         TIMESTAMP('2018-01-01 00:00:00') AS end_ts
 ),
+
+/* ---------------------------------------------------------
+   weekly_revenue
+   - Grain : 1 row per week (Monday-based)
+   - Revenue is defined by payment records
+--------------------------------------------------------- */
 weekly_revenue AS (
     SELECT
         DATE_SUB(
             DATE(o.order_purchase_timestamp),
             INTERVAL WEEKDAY(o.order_purchase_timestamp) DAY
-        ) AS week_start_date,                 -- Monday-based week start (YYYY-MM-DD)
+        ) AS week_start_date,                 -- Monday-based week start
         SUM(p.payment_value) AS revenue       -- weekly total revenue
     FROM orders AS o
-    JOIN order_payments AS p
-      ON o.order_id = p.order_id              -- payments define revenue
     JOIN params AS prm
       ON o.order_purchase_timestamp >= prm.start_ts
      AND o.order_purchase_timestamp <  prm.end_ts
+    JOIN order_payments AS p
+      ON o.order_id = p.order_id              -- 1 order : N payments (summed)
     GROUP BY
-        DATE_SUB(
-            DATE(o.order_purchase_timestamp),
-            INTERVAL WEEKDAY(o.order_purchase_timestamp) DAY
-        )
+        week_start_date
+),
+
+/* ---------------------------------------------------------
+   weekly_with_prev
+   - Attach previous week's revenue for WoW calculation
+--------------------------------------------------------- */
+weekly_with_prev AS (
+    SELECT
+        w.week_start_date,
+        w.revenue,
+        LAG(w.revenue) OVER (ORDER BY w.week_start_date) AS prev_revenue
+    FROM weekly_revenue AS w
 )
 
 SELECT
-    w.week_start_date,
-    w.revenue,
-    (w.revenue - LAG(w.revenue) OVER (ORDER BY w.week_start_date))
-        / NULLIF(LAG(w.revenue) OVER (ORDER BY w.week_start_date), 0) * 100.0
-        AS wow_pct
-FROM weekly_revenue AS w
+    week_start_date,
+    revenue,
+    (revenue - prev_revenue)
+        / NULLIF(prev_revenue, 0) * 100.0     AS wow_pct
+FROM weekly_with_prev
 ORDER BY
-    w.week_start_date;
+    week_start_date;
