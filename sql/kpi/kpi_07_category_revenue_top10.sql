@@ -10,8 +10,7 @@
    Date Filter  : [start_ts, end_ts)
    Valid Orders : Orders with recorded payments
    Output       : category, revenue
-   Notes        : Revenue is allocated from order-level payments to categories
-                 based on item-value share within each order
+   Notes        : Order-level payments are proportionally allocated to categories based on their item-value share within each order.
    ========================================================= */
 
 WITH
