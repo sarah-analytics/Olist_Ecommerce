@@ -109,8 +109,10 @@ All SQL files are organized under the `sql/` directory using a layered approach:
    Category revenue is calculated by allocating **order-level payments**
    to categories based on each category’s **item-value share within the order**.
    This keeps revenue definitions consistent across all revenue KPIs.
+   - Validation: Allocation integrity verified via order-level test
+   ensuring allocated revenue sums to total order revenue.
 
-8. **KPI #08 — Best-selling Products (Units Sold)**  
+9. **KPI #08 — Best-selling Products (Units Sold)**  
    File: `kpi_08_best_selling_products.sql`  
    Output: `product_id, units_sold`  
    Volume-based KPI identifying high-velocity products, independent of revenue.
