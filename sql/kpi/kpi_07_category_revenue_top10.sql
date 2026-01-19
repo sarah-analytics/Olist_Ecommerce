@@ -1,5 +1,5 @@
 /* =========================================================
-   KPI #07 — Category Revenue Top 10
+   KPI #07 — Category Revenue Top 10 (Allocation, LEFT JOIN Fix)
 
    Type         : Base
    Description  : Identify the top 10 product categories by total revenue
@@ -8,9 +8,12 @@
    Grain        : 1 row per category
    Time Basis   : orders.order_purchase_timestamp
    Date Filter  : [start_ts, end_ts)
-   Valid Orders : Orders with recorded payments
+   Valid Orders : Orders in range with recorded payments + items
    Output       : category, revenue
-   Notes        : Order-level payments are proportionally allocated to categories based on their item-value share within each order.
+   Notes        : Order-level payments are proportionally allocated to categories
+                 based on their item-value share within each order.
+                 LEFT JOIN products ensures unmatched products are retained
+                 under 'unknown' so allocation sums to order revenue.
    ========================================================= */
 
 WITH
@@ -40,12 +43,13 @@ order_payment_total AS (
 ),
 order_item_values AS (
     -- 1 row per order per category: item-value inside the order
+    -- LEFT JOIN keeps items even if product dimension lookup is missing
     SELECT
         oi.order_id,
         COALESCE(pr.product_category_name, 'unknown') AS category,
         SUM(oi.price + oi.freight_value) AS category_item_value
     FROM order_items AS oi
-    JOIN products AS pr
+    LEFT JOIN products AS pr
       ON oi.product_id = pr.product_id
     GROUP BY
         oi.order_id,
@@ -71,7 +75,7 @@ allocated_category_revenue AS (
     JOIN order_payment_total AS pt
       ON o.order_id = pt.order_id            -- must have payments
     JOIN order_item_total AS it
-      ON o.order_id = it.order_id
+      ON o.order_id = it.order_id            -- must have items
     JOIN order_item_values AS iv
       ON o.order_id = iv.order_id
 )
