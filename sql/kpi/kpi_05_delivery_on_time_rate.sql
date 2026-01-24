@@ -31,7 +31,7 @@ delivered_base AS (
         AND o.order_delivered_customer_date < prm.end_ts
     WHERE o.order_status = 'delivered'  -- Only include delivered orders
 ),
-on_time_orders AS (
+delivered_on_time_base AS (
     -- Calculate if the order was delivered on time
     SELECT 
         order_id,
