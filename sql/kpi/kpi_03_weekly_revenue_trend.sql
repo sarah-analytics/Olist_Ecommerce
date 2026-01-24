@@ -48,12 +48,11 @@ weekly_revenue AS (
 --------------------------------------------------------- */
 weekly_with_prev AS (
     SELECT
-        w.week_start_date,
-        w.revenue,
-        LAG(w.revenue) OVER (ORDER BY w.week_start_date) AS prev_revenue
-    FROM weekly_revenue AS w
+        week_start_date,
+        revenue,
+        LAG(revenue) OVER (ORDER BY week_start_date ASC) AS prev_revenue
+    FROM weekly_revenue
 )
-
 SELECT
     week_start_date,
     revenue,
