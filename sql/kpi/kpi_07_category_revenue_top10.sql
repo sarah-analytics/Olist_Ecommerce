@@ -4,16 +4,22 @@
    Type         : Base
    Description  : Identify the top 10 product categories by total revenue
    Numerator    : Revenue allocated to each category
-   Denominator  : Not applicable (absolute revenue ranking)
+   Denominator  : Not applicable (KPI is absolute revenue, not a rate)
    Grain        : 1 row per category
    Time Basis   : orders.order_purchase_timestamp
    Date Filter  : [start_ts, end_ts)
    Valid Orders : Orders in range with recorded payments + items
    Output       : category, revenue
    Notes        : Order-level payments are proportionally allocated to categories
-                 based on their item-value share within each order.
-                 LEFT JOIN products ensures unmatched products are retained
-                 under 'unknown' so allocation sums to order revenue.
+                  based on each category’s item-value share within the order.
+
+                  Allocation ratio uses:
+                  Part  = category_item_value
+                  Base  = order_item_value_total
+
+                  LEFT JOIN to products retains items with missing product metadata,
+                  assigning them to 'unknown' so that allocation remains complete
+                  and category revenue sums back to total order revenue.
    ========================================================= */
 
 WITH
