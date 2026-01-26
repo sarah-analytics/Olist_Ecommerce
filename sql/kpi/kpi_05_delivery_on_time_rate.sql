@@ -45,4 +45,4 @@ delivered_on_time_base AS (
 -- Calculate the overall on-time delivery rate
 SELECT 
     SUM(on_time_flag) / NULLIF(COUNT(*), 0) * 100.0 AS on_time_rate  -- Calculate the percentage of on-time deliveries
-FROM on_time_orders;
+FROM delivered_on_time_base;
