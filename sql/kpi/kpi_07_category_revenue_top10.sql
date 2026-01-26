@@ -41,6 +41,15 @@ order_payment_total AS (
     GROUP BY
         p.order_id
 ),
+order_item_total AS (
+    -- 1 row per order: total item-value (allocation base)
+    SELECT
+        oi.order_id,
+        SUM(oi.price + oi.freight_value) AS order_item_value_total
+    FROM order_items AS oi
+    GROUP BY
+        oi.order_id
+),
 order_item_values AS (
     -- 1 row per order per category: item-value inside the order
     -- LEFT JOIN keeps items even if product dimension lookup is missing
@@ -54,15 +63,6 @@ order_item_values AS (
     GROUP BY
         oi.order_id,
         COALESCE(pr.product_category_name, 'unknown')
-),
-order_item_total AS (
-    -- 1 row per order: total item-value (allocation base)
-    SELECT
-        oi.order_id,
-        SUM(oi.price + oi.freight_value) AS order_item_value_total
-    FROM order_items AS oi
-    GROUP BY
-        oi.order_id
 ),
 allocated_category_revenue AS (
     -- allocate order-level revenue to categories by item-value share
