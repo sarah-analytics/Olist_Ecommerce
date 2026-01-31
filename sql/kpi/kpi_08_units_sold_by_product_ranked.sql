@@ -1,5 +1,5 @@
 /* =========================================================
-   KPI #08 — Best-selling Products
+   KPI #08 — Units Sold by Product (Ranked)
 
    Type         : Base
    Description  : Identify products with the highest sales volume
