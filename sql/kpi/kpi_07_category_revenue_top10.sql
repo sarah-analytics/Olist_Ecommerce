@@ -1,13 +1,20 @@
 /* =========================================================
-   TEST — KPI #07 Allocation Balance Check (Order-level)
+   KPI #07 — Category Revenue Top 10 (Allocation)
 
-   Purpose     : Validate revenue allocation logic at the order level
-   Assertion   : SUM(allocated_revenue) == order_revenue (per order)
-   Grain       : 1 row per order
-   Expected    : No rows returned (diff ≈ 0)
-   Notes       : Catches revenue leakage / join issues / divide-by-zero cases
-                 by verifying that allocated category revenue sums back to
-                 the original order revenue for each order.
+   Type         : Base (Allocated Revenue)
+   Description  : Allocate order-level revenue to categories using item-value share,
+                  then rank categories by total allocated revenue (Top 10).
+   Numerator    : Sum of allocated revenue per category
+   Denominator  : Not applicable (absolute revenue ranking KPI)
+   Grain        : 1 row per category
+   Time Basis   : orders.order_purchase_timestamp
+   Date Filter  : [start_ts, end_ts)
+   Valid Orders : Orders in range with recorded payments and items
+   Output       : category, category_revenue
+   Notes        : Revenue is defined as SUM(payment_value) per order.
+                  Allocation base is SUM(price + freight_value) per order.
+                  Category allocation uses: order_revenue * (category_item_value / order_item_value_total).
+                  LEFT JOIN products keeps items even when product category is missing (categorized as 'unknown').
    ========================================================= */
 
 WITH
@@ -16,16 +23,17 @@ params AS (
         TIMESTAMP('2017-01-01 00:00:00') AS start_ts,
         TIMESTAMP('2018-01-01 00:00:00') AS end_ts
 ),
+
 orders_in_range AS (
-    -- base orders within time range
+    -- base orders within time range (time basis)
     SELECT
-        o.order_id,
-        o.order_purchase_timestamp
+        o.order_id
     FROM orders AS o
     JOIN params AS prm
       ON o.order_purchase_timestamp >= prm.start_ts
      AND o.order_purchase_timestamp <  prm.end_ts
 ),
+
 order_payment_total AS (
     -- 1 row per order: total paid amount (revenue pool)
     SELECT
@@ -35,8 +43,9 @@ order_payment_total AS (
     GROUP BY
         p.order_id
 ),
+
 order_item_total AS (
-    -- 1 row per order: total item-value (allocation base)
+    -- 1 row per order: total item value (allocation base)
     SELECT
         oi.order_id,
         SUM(oi.price + oi.freight_value) AS order_item_value_total
@@ -44,9 +53,9 @@ order_item_total AS (
     GROUP BY
         oi.order_id
 ),
+
 order_item_values AS (
-    -- 1 row per order per category: item-value inside the order
-    -- LEFT JOIN keeps items even if product dimension lookup is missing
+    -- 1 row per (order_id, category): category item value inside the order
     SELECT
         oi.order_id,
         COALESCE(pr.product_category_name, 'unknown') AS category,
@@ -58,43 +67,30 @@ order_item_values AS (
         oi.order_id,
         COALESCE(pr.product_category_name, 'unknown')
 ),
+
 allocated_category_revenue AS (
-    -- allocate order-level revenue to categories by item-value share
     -- Grain: 1 row per (order_id, category)
     SELECT
         o.order_id,
         iv.category,
         pt.order_revenue
-            * (iv.category_item_value / NULLIF(it.order_item_value_total, 0))
-            AS allocated_revenue
+          * (iv.category_item_value / NULLIF(it.order_item_value_total, 0))
+          AS allocated_revenue
     FROM orders_in_range AS o
     JOIN order_payment_total AS pt
-      ON o.order_id = pt.order_id            -- must have payments
+      ON o.order_id = pt.order_id           -- must have payments
     JOIN order_item_total AS it
-      ON o.order_id = it.order_id            -- must have items
+      ON o.order_id = it.order_id           -- must have items
     JOIN order_item_values AS iv
       ON o.order_id = iv.order_id
-),
-order_level_check AS (
-    -- collapse back to 1 row per order and compare to original order revenue
-    SELECT
-        a.order_id,
-        MAX(pt.order_revenue)                     AS order_revenue,
-        SUM(a.allocated_revenue)                  AS allocated_revenue_sum,
-        SUM(a.allocated_revenue) - MAX(pt.order_revenue) AS diff
-    FROM allocated_category_revenue AS a
-    JOIN order_payment_total AS pt
-      ON a.order_id = pt.order_id
-    GROUP BY
-        a.order_id
 )
 
 SELECT
-    order_id,
-    order_revenue,
-    allocated_revenue_sum,
-    diff
-FROM order_level_check
-WHERE ABS(diff) > 0.01
-ORDER BY ABS(diff) DESC
-LIMIT 100;
+    a.category,
+    ROUND(SUM(a.allocated_revenue), 2) AS category_revenue
+FROM allocated_category_revenue AS a
+GROUP BY
+    a.category
+ORDER BY
+    category_revenue DESC
+LIMIT 10;
