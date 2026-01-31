@@ -103,20 +103,19 @@ All SQL files are organized under the `sql/` directory using a layered approach:
 
 ### 🛍 Merchandising (Category & Product)
 
-7. KPI #07 — Category Revenue Top 10
-  File: kpi_07_category_revenue_top10.sql
-  Output: category, category_revenue
-Revenue per category is computed using order-level revenue allocation.
-Total order payments are proportionally distributed to categories based on their item-value share within each order, ensuring a consistent revenue definition (SSOT) across all revenue KPIs.
+7. **KPI #07 — Category Revenue Top 10 (Allocated)**  
+   File: `kpi_07_category_revenue_top10.sql`  
+   Output: `category, category_revenue`
+   Revenue per category is computed using order-level revenue allocation.
+   Total order payments are proportionally distributed to categories based on their item-value share     within each order, ensuring a consistent revenue definition (SSOT) across all revenue KPIs.
+   Validation:
+   `SUM(allocated_category_revenue) = SUM(order_revenue)`
 
-Validation:
-SUM(allocated_category_revenue) = SUM(order_revenue)
-
-9. **KPI #08 — Best-selling Products (Units Sold)**  
+9. **KPI #08 — Units Sold by Product (Ranked)**  
    File: `kpi_08_best_selling_products.sql`  
    Output: `product_id, units_sold`  
-   Volume-based KPI identifying high-velocity products, independent of revenue.
-
+   Volume-based KPI listing all products with their units sold in the selected period, sorted by         sales volume, independent of revenue or price effects.
+   
 ---
 
 ### 🧮 Price Bucket Analysis (Set KPIs: #09–#11)
