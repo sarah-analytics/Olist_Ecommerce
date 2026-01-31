@@ -1,25 +1,13 @@
 /* =========================================================
-   KPI #07 — Category Revenue Top 10 (Allocation, LEFT JOIN Fix)
+   TEST — KPI #07 Allocation Balance Check (Order-level)
 
-   Type         : Base
-   Description  : Identify the top 10 product categories by total revenue
-   Numerator    : Revenue allocated to each category
-   Denominator  : Not applicable (KPI is absolute revenue, not a rate)
-   Grain        : 1 row per category
-   Time Basis   : orders.order_purchase_timestamp
-   Date Filter  : [start_ts, end_ts)
-   Valid Orders : Orders in range with recorded payments + items
-   Output       : category, revenue
-   Notes        : Order-level payments are proportionally allocated to categories
-                  based on each category’s item-value share within the order.
-
-                  Allocation ratio uses:
-                  Part  = category_item_value
-                  Base  = order_item_value_total
-
-                  LEFT JOIN to products retains items with missing product metadata,
-                  assigning them to 'unknown' so that allocation remains complete
-                  and category revenue sums back to total order revenue.
+   Purpose     : Validate revenue allocation logic at the order level
+   Assertion   : SUM(allocated_revenue) == order_revenue (per order)
+   Grain       : 1 row per order
+   Expected    : No rows returned (diff ≈ 0)
+   Notes       : Catches revenue leakage / join issues / divide-by-zero cases
+                 by verifying that allocated category revenue sums back to
+                 the original order revenue for each order.
    ========================================================= */
 
 WITH
@@ -72,7 +60,9 @@ order_item_values AS (
 ),
 allocated_category_revenue AS (
     -- allocate order-level revenue to categories by item-value share
+    -- Grain: 1 row per (order_id, category)
     SELECT
+        o.order_id,
         iv.category,
         pt.order_revenue
             * (iv.category_item_value / NULLIF(it.order_item_value_total, 0))
@@ -84,14 +74,27 @@ allocated_category_revenue AS (
       ON o.order_id = it.order_id            -- must have items
     JOIN order_item_values AS iv
       ON o.order_id = iv.order_id
+),
+order_level_check AS (
+    -- collapse back to 1 row per order and compare to original order revenue
+    SELECT
+        a.order_id,
+        MAX(pt.order_revenue)                     AS order_revenue,
+        SUM(a.allocated_revenue)                  AS allocated_revenue_sum,
+        SUM(a.allocated_revenue) - MAX(pt.order_revenue) AS diff
+    FROM allocated_category_revenue AS a
+    JOIN order_payment_total AS pt
+      ON a.order_id = pt.order_id
+    GROUP BY
+        a.order_id
 )
 
 SELECT
-    a.category,
-    SUM(a.allocated_revenue) AS revenue
-FROM allocated_category_revenue AS a
-GROUP BY
-    a.category
-ORDER BY
-    revenue DESC
-LIMIT 10;
+    order_id,
+    order_revenue,
+    allocated_revenue_sum,
+    diff
+FROM order_level_check
+WHERE ABS(diff) > 0.01
+ORDER BY ABS(diff) DESC
+LIMIT 100;
