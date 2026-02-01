@@ -54,4 +54,41 @@ bucketed_orders AS (
         CASE
             WHEN v.order_value <  50 THEN '<50'
             WHEN v.order_value < 100 THEN '50-99'
-            WHEN v.ord
+            WHEN v.order_value < 200 THEN '100-199'
+            WHEN v.order_value < 500 THEN '200-499'
+            ELSE '500+'
+        END AS price_bucket
+    FROM orders_in_range AS o
+    JOIN order_value   AS v ON o.order_id = v.order_id
+    JOIN order_revenue AS r ON o.order_id = r.order_id   -- Valid Orders: recorded payments
+),
+bucket_revenue AS (
+    -- 1 row per bucket
+    SELECT
+        b.price_bucket,
+        SUM(b.order_revenue) AS revenue
+    FROM bucketed_orders AS b
+    GROUP BY
+        b.price_bucket
+),
+total_revenue AS (
+    -- single row denominator
+    SELECT
+        SUM(br.revenue) AS total_revenue
+    FROM bucket_revenue AS br
+)
+
+SELECT
+    br.price_bucket,
+    br.revenue / NULLIF(tr.total_revenue, 0) * 100.0 AS revenue_pct
+FROM bucket_revenue AS br
+CROSS JOIN total_revenue AS tr
+ORDER BY
+    CASE br.price_bucket
+        WHEN '<50'      THEN 1
+        WHEN '50-99'    THEN 2
+        WHEN '100-199'  THEN 3
+        WHEN '200-499'  THEN 4
+        WHEN '500+'     THEN 5
+        ELSE 999
+    END;
