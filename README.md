@@ -34,14 +34,16 @@ Shortened table names are used throughout the project for readability:
 
 ---
 
-## 🗂 Project Structure
+## 📁 Project Structure
 
-All SQL files are organized under the `sql/` directory using a layered approach:
+All SQL files are organized under the `sql/` directory using a layered, production-style approach:
 
-- `sql/int`   : intermediate definition tables shared across KPIs  
-- `sql/kpi`   : business KPI queries  
-- `sql/mart`  : consumption-ready summary tables  
-- `sql/tests` : placeholders for future validation queries
+- **`sql/int/`** : canonical intermediate tables shared across KPIs  
+- **`sql/kpi/`** : business KPI queries  
+- **`sql/mart/`** : consumption-ready summary tables for dashboards  
+- **`sql/tests/`** : data quality checks and validation queries  
+- **`sql/ddl/`** : physical schema definitions (indexes, constraints)  
+  - **`sql/ddl/indexes/`** : performance indexes for common access patterns (e.g. retention, time-range lookups)
 
 ---
 
