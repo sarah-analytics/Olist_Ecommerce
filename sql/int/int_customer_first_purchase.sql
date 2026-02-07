@@ -6,6 +6,7 @@
    Source       : orders + customers
    ========================================================= */
 
+CREATE TABLE int_customer_first_purchase_tbl AS
 SELECT
     c.customer_unique_id,
     MIN(o.order_purchase_timestamp) AS first_order_ts
