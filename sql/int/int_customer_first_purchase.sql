@@ -3,13 +3,16 @@
 
    Grain        : 1 row per customer_unique_id
    Description  : Identify the first completed purchase timestamp per customer
-   Source       : orders
+   Source       : orders + customers
    ========================================================= */
 
 SELECT
-    customer_unique_id,
-    MIN(order_purchase_timestamp) AS first_order_ts
-FROM orders 
-WHERE order_status = 'delivered'
+    c.customer_unique_id,
+    MIN(o.order_purchase_timestamp) AS first_order_ts
+FROM orders AS o
+JOIN customers AS c
+  ON o.customer_id = c.customer_id
+WHERE o.order_status = 'delivered'
 GROUP BY
-     customer_unique_id;
+    c.customer_unique_id;
+
