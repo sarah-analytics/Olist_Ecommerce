@@ -147,14 +147,12 @@ to be interpreted together:
 
 12. **KPI #12 — Repeat Purchase Retention (30/60/90D)**  
     File: `kpi_12_repeat_purchase_retention_30_60_90d.sql`  
-    Output: `window_days, retention_pct`
+    Output: `window_days, cohort_customers, retained_customers, retention_pct`
 
-Retention is calculated using a single parameterized query with
-identical logic across multiple time windows (30, 60, and 90 days).
+Retention is calculated using a single parameterized query with identical logic across multiple time windows (30, 60, and 90 days).
 
-- Denominator: customers with a first purchase within the cohort window  
-- Numerator: customers with at least one repeat purchase within the window  
-- Valid orders: completed (delivered) orders only
+- Denominator: customers with a first delivered purchase within the cohort window  
+- Numerator: customers with at least one repeat delivered purchase within the window after first_order_ts  
 
 ---
 
