@@ -13,6 +13,7 @@
 
    Notes        : Uses second_order_ts for exact repeat detection
    ========================================================= */
+
 WITH
 params AS (
     SELECT
@@ -36,7 +37,7 @@ ordered AS (
             PARTITION BY v.customer_unique_id
             ORDER BY v.order_ts
         ) AS rn
-    FROM int_valid_orders v
+    FROM int_valid_orders_vw v
 ),
 cohort AS (
     SELECT
@@ -48,27 +49,30 @@ cohort AS (
       ON o.order_ts >= prm.start_ts
      AND o.order_ts <  prm.end_ts
     WHERE o.rn = 1
+),
+flags AS (
+    -- 1 row per (window_days, customer_unique_id)
+    SELECT
+        w.window_days,
+        c.customer_unique_id,
+        c.first_order_ts,
+        c.second_order_ts,
+        CASE
+            WHEN c.second_order_ts IS NOT NULL
+             AND c.second_order_ts < c.first_order_ts + INTERVAL w.window_days DAY
+            THEN 1 ELSE 0
+        END AS is_retained
+    FROM windows w
+    JOIN cohort c
+      -- observable window (분모 조건)
+      ON c.first_order_ts < (SELECT end_ts FROM params) - INTERVAL w.window_days DAY
 )
 
 SELECT
-    w.window_days,
+    f.window_days,
     COUNT(*) AS cohort_customers,
-    SUM(
-        CASE
-            WHEN c.second_order_ts IS NOT NULL
-             AND c.second_order_ts < c.first_order_ts + INTERVAL w.window_days DAY
-            THEN 1 ELSE 0
-        END
-    ) AS retained_customers,
-    SUM(
-        CASE
-            WHEN c.second_order_ts IS NOT NULL
-             AND c.second_order_ts < c.first_order_ts + INTERVAL w.window_days DAY
-            THEN 1 ELSE 0
-        END
-    ) / NULLIF(COUNT(*), 0) * 100.0 AS retention_pct
-FROM windows w
-JOIN cohort c
-  ON c.first_order_ts < (SELECT end_ts FROM params) - INTERVAL w.window_days DAY
-GROUP BY w.window_days
-ORDER BY w.window_days;
+    SUM(f.is_retained) AS retained_customers,
+    SUM(f.is_retained) / NULLIF(COUNT(*), 0) * 100.0 AS retention_pct
+FROM flags f
+GROUP BY f.window_days
+ORDER BY f.window_days;
