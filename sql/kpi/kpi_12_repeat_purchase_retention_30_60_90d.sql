@@ -64,7 +64,7 @@ flags AS (
         END AS is_retained
     FROM windows w
     JOIN cohort c
-      -- observable window (분모 조건)
+      -- observable window 
       ON c.first_order_ts < (SELECT end_ts FROM params) - INTERVAL w.window_days DAY
 )
 
