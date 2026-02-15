@@ -2,16 +2,16 @@
    KPI #12 — Repeat Purchase Retention (30/60/90D)
 
    Type         : Derived
-   Description  : Measure customer repeat purchase within N days of first order
-   Numerator    : Customers with ≥1 repeat order within N days
-   Denominator  : Customers with a first purchase in cohort window
+   Description  : % of customers who repeat within N days of first order
+   Numerator    : Customers with second_order_ts < first_order_ts + window_days
+   Denominator  : Cohort customers with observable window
    Grain        : 1 row per window_days
-   Time Basis   : cohort_first.first_order_ts
-   Date Filter  : [start_ts, end_ts)
-   Valid Orders : Delivered orders only
+   Time Basis   : first_order_ts
+   Date Filter  : first_order_ts ∈ [start_ts, end_ts)
+   Valid Orders : Delivered orders only (int_valid_orders)
    Output       : window_days, cohort_customers, retained_customers, retention_pct
-   Notes        : Cohort defined by first_order_ts; repeat must occur after first_order_ts
-                  and before first_order_ts + INTERVAL window_days DAY
+
+   Notes        : Uses second_order_ts for exact repeat detection
    ========================================================= */
 WITH
 params AS (
@@ -20,51 +20,55 @@ params AS (
         TIMESTAMP('2018-01-01 00:00:00') AS end_ts
 ),
 windows AS (
-    SELECT 30 AS window_days UNION ALL
-    SELECT 60 UNION ALL
-    SELECT 90
+    SELECT 30 AS window_days
+    UNION ALL SELECT 60
+    UNION ALL SELECT 90
 ),
-cohort_first AS (
-    -- 1 row per customer_unique_id (cohort anchor)
+ordered AS (
     SELECT
-        c.customer_unique_id,
-        MIN(o.order_purchase_timestamp) AS first_order_ts
-    FROM orders AS o
-    JOIN customers AS c
-      ON o.customer_id = c.customer_id
-    JOIN params AS prm
-      ON o.order_purchase_timestamp >= prm.start_ts
-     AND o.order_purchase_timestamp <  prm.end_ts
-    WHERE o.order_status = 'delivered'
-    GROUP BY
-        c.customer_unique_id
+        v.customer_unique_id,
+        v.order_ts,
+        LEAD(v.order_ts) OVER (
+            PARTITION BY v.customer_unique_id
+            ORDER BY v.order_ts
+        ) AS next_order_ts,
+        ROW_NUMBER() OVER (
+            PARTITION BY v.customer_unique_id
+            ORDER BY v.order_ts
+        ) AS rn
+    FROM int_valid_orders v
 ),
-repeat_flag AS (
-    -- 1 row per (customer_unique_id, window_days) where repeat exists
-    SELECT DISTINCT
-        f.customer_unique_id,
-        w.window_days
-    FROM cohort_first AS f
-    CROSS JOIN windows AS w
-    JOIN customers AS c
-      ON c.customer_unique_id = f.customer_unique_id
-    JOIN orders AS o
-      ON o.customer_id = c.customer_id
-     AND o.order_status = 'delivered'
-     AND o.order_purchase_timestamp >  f.first_order_ts
-     AND o.order_purchase_timestamp <  f.first_order_ts + INTERVAL w.window_days DAY
+cohort AS (
+    SELECT
+        o.customer_unique_id,
+        o.order_ts      AS first_order_ts,
+        o.next_order_ts AS second_order_ts
+    FROM ordered o
+    JOIN params prm
+      ON o.order_ts >= prm.start_ts
+     AND o.order_ts <  prm.end_ts
+    WHERE o.rn = 1
 )
+
 SELECT
     w.window_days,
-    COUNT(DISTINCT f.customer_unique_id) AS cohort_customers,
-    COUNT(DISTINCT rf.customer_unique_id) AS retained_customers,
-    COUNT(DISTINCT rf.customer_unique_id) / NULLIF(COUNT(DISTINCT f.customer_unique_id), 0) * 100.0 AS retention_pct
-FROM windows AS w
-CROSS JOIN cohort_first AS f
-LEFT JOIN repeat_flag AS rf
-  ON rf.customer_unique_id = f.customer_unique_id
- AND rf.window_days = w.window_days
-GROUP BY
-    w.window_days
-ORDER BY
-    w.window_days;
+    COUNT(*) AS cohort_customers,
+    SUM(
+        CASE
+            WHEN c.second_order_ts IS NOT NULL
+             AND c.second_order_ts < c.first_order_ts + INTERVAL w.window_days DAY
+            THEN 1 ELSE 0
+        END
+    ) AS retained_customers,
+    SUM(
+        CASE
+            WHEN c.second_order_ts IS NOT NULL
+             AND c.second_order_ts < c.first_order_ts + INTERVAL w.window_days DAY
+            THEN 1 ELSE 0
+        END
+    ) / NULLIF(COUNT(*), 0) * 100.0 AS retention_pct
+FROM windows w
+JOIN cohort c
+  ON c.first_order_ts < (SELECT end_ts FROM params) - INTERVAL w.window_days DAY
+GROUP BY w.window_days
+ORDER BY w.window_days;
