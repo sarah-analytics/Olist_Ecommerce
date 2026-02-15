@@ -149,10 +149,10 @@ to be interpreted together:
     File: `kpi_12_repeat_purchase_retention_30_60_90d.sql`  
     Output: `window_days, cohort_customers, retained_customers, retention_pct`
 
-Retention is calculated using a single parameterized query with identical logic across multiple time windows (30, 60, and 90 days).
+Retention is calculated using a cohort defined by first delivered purchase, with repeat detection based on the second order timestamp.
 
-- Denominator: customers with a first delivered purchase within the cohort window  
-- Numerator: customers with at least one repeat delivered purchase within the window after first_order_ts  
+- Denominator: customers whose first delivered purchase falls within the cohort window and have sufficient observation period
+- Numerator: customers whose second delivered purchase occurs within the specified window after first_order_ts  
 
 ---
 
