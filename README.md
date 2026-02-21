@@ -109,7 +109,7 @@ All SQL files are organized under the `sql/` directory using a layered, producti
    File: `kpi_07_category_revenue_top10_allocated.sql`  
    Output: `category, category_revenue`
    Revenue per category is computed using order-level revenue allocation.
-   Total order payments are proportionally distributed to categories based on their item-value share     within each order, ensuring a consistent revenue definition (SSOT) across all revenue KPIs.
+   Total order payments are proportionally distributed to categories based on their item-value share       within each order, ensuring a consistent revenue definition (SSOT) across all revenue KPIs.
    Validation:
    `SUM(allocated_category_revenue) = SUM(order_revenue)`
 
@@ -153,6 +153,26 @@ Retention is calculated using a cohort defined by first delivered purchase, with
 
 - Denominator: customers whose first delivered purchase falls within the cohort window and have sufficient observation period
 - Numerator: customers whose second delivered purchase occurs within the specified window after first_order_ts  
+
+---
+
+13. **KPI #13 — Fulfillment Rate**  
+    File: `kpi_13_fulfillment_rate.sql`  
+    Output: `order_date, fulfilled_orders, finalized_orders, fulfillment_rate_pct`
+
+Fulfillment rate is calculated based on finalized order outcomes.
+- Denominator: finalized orders (delivered, canceled, unavailable)
+- Numerator: fulfilled orders (delivered)
+
+---
+
+14. **KPI #14 — Shortage Rate (Order Failure Rate)**
+    File: 'kpi_14_shortage_rate.sql'
+    Output: 'order_date, shortage_orders, finalized_orders, shortage_rate_pct'
+
+Shortage rate is calculated based on finalized order outcomes.
+- Denominator: finalized orders (delivered, canceled, unavailable)
+- Numerator: failed orders (canceled, unavailable)
 
 ---
 
