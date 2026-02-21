@@ -42,8 +42,6 @@ All SQL files are organized under the `sql/` directory using a layered, producti
 - **`sql/kpi/`** : business KPI queries  
 - **`sql/mart/`** : consumption-ready summary tables for dashboards  
 - **`sql/tests/`** : data quality checks and validation queries  
-- **`sql/ddl/`** : physical schema definitions (indexes, constraints)  
-  - **`sql/ddl/indexes/`** : performance indexes for common access patterns (e.g. retention, time-range lookups)
 
 ---
 
@@ -156,6 +154,8 @@ Retention is calculated using a cohort defined by first delivered purchase, with
 
 ---
 
+### 📦 Fulfillment (Order Outcome)
+
 13. **KPI #13 — Fulfillment Rate**  
     File: `kpi_13_fulfillment_rate.sql`  
     Output: `order_date, fulfilled_orders, finalized_orders, fulfillment_rate_pct`
@@ -165,6 +165,8 @@ Fulfillment rate is calculated based on finalized order outcomes.
 - Numerator: fulfilled orders (delivered)
 
 ---
+
+### ⚠️ Shortage / Failure (Order Outcome)
 
 14. **KPI #14 — Shortage Rate (Order Failure Rate)**
     File: 'kpi_14_shortage_rate.sql'
