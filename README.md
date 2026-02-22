@@ -35,8 +35,10 @@ These KPIs help identify fulfillment risks, delivery delays, and operational per
 
 ---
 
+```markdown
 ## 📁 Project Structure
 
+```bash
 sql/
 ├── int/     # intermediate tables (cleaned and standardized)
 ├── kpi/     # production KPI queries
