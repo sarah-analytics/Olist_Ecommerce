@@ -1,189 +1,137 @@
-# 📊 Olist E-commerce Analytics Project
+# 📊 Supply Chain & Fulfillment Analytics SQL Project
 
-👋 About
+## 👋 About
 
-KR/EN bilingual data analyst with strengths in clean, production-style SQL,
-marketplace analytics, and concise, insight-driven dashboards.
+**KR/EN bilingual Data Analyst** with hands-on inventory operations experience and strong SQL skills.
 
-This repository serves as an analytics portfolio project demonstrating how
-e-commerce KPIs are designed, standardized, and implemented using MySQL.
-The focus is on clear metric definitions, consistent logic, and
-analysis-ready outputs for BI and stakeholder reporting.
+This project builds **production-style operational KPIs** to monitor fulfillment performance, delivery reliability, order failures, and revenue behavior.
+
+Built using the public **Olist e-commerce dataset**, simulating real-world order, payment, inventory, and fulfillment workflows.
 
 ---
 
-## 📦 Olist E-commerce KPI Pack (MySQL)
+## 🚀 Key Capabilities
 
-This folder contains a production-style KPI SQL pack built on the
-Olist Brazilian e-commerce dataset.
-All queries are written for MySQL and designed to be reusable,
-consistent, and portfolio-ready.
+- Built **14 production-grade SQL KPIs** covering fulfillment, delivery, revenue, and retention
+- Designed **operational fulfillment metrics** including Fulfillment Rate and Order Failure Rate (stockout proxy)
+- Implemented **cohort-based retention analysis (30/60/90 day windows)**
+- Applied **revenue allocation logic** to ensure financial accuracy across categories
+- Structured using **production-style layered architecture (INT → KPI → MART)**
+- Ensured metric consistency using **single source of truth (SSOT) definitions**
+- Designed for **real-world supply chain, fulfillment, and operational analytics use cases**
 
 ---
 
-## 🗂 Dataset & Schema
+## 📦 Supply Chain & Fulfillment Highlights
 
-Shortened table names are used throughout the project for readability:
+Core operational KPIs:
 
-- `orders`
-- `order_items`
-- `order_payments`
-- `products`
-- `int_customer_first_purchase`
-- `int_valid_orders_tbl`
+- **Fulfillment Rate** — % of finalized orders successfully fulfilled  
+- **Order Failure Rate** — proxy metric for fulfillment or stockout issues  
+- **Delivery On-time Rate** — % of orders delivered within estimated delivery date  
+- **Average Delivery Days** — fulfillment cycle time  
+
+These KPIs help identify fulfillment risks, delivery delays, and operational performance bottlenecks.
 
 ---
 
 ## 📁 Project Structure
 
-All SQL files are organized under the `sql/` directory using a layered, production-style approach:
-
-- **`sql/int/`** : canonical intermediate tables shared across KPIs  
-- **`sql/kpi/`** : business KPI queries  
-- **`sql/mart/`** : consumption-ready summary tables for dashboards  
-- **`sql/tests/`** : data quality checks and validation queries  
-
----
-
-## 🧭 KPI Design Principles
-
-- Time filters follow the pattern `>= start_ts` and `< end_ts`
-  to avoid overlapping date ranges.
-- All rate-based KPIs use the formula  
-  `rate = target / NULLIF(base, 0) * 100.0`
-  to ensure numerical stability.
-- Each KPI explicitly defines its grain (day, week, bucket, product, customer),
-  and the grain is fixed early in the query to prevent duplication from joins.
+```bash
+sql/
+├── int/     # intermediate tables (cleaned and standardized)
+├── kpi/     # production KPI queries
+├── mart/    # dashboard-ready tables
+└── tests/   # validation and integrity checks
 
 ---
 
 ## 🧾 KPI Index
 
-### 📈 Volume & Revenue (Baseline)
+### 📦 Supply Chain & Fulfillment Performance
 
-1. **KPI #01 — Daily Order Count**  
-   File: `kpi01_daily_order_count.sql`  
-   Output: `order_date, daily_orders`  
-   Tracks the number of distinct orders placed per day.
+**KPI #05 — Delivery On-time Rate**  
+File: `kpi_05_delivery_on_time_rate.sql`  
+Output: `on_time_rate_pct`
 
-2. **KPI #02 — Daily Revenue**  
-   File: `kpi02_daily_revenue.sql`  
-   Output: `order_date, daily_revenue`  
-   Revenue is defined using **recorded payments** from `order_payments`.
+**KPI #06 — Average Delivery Days**  
+File: `kpi_06_average_delivery_days.sql`  
+Output: `avg_delivery_days`
 
-3. **KPI #03 — Weekly Revenue Trend (WoW%)**  
-   File: `kpi03_weekly_revenue_trend.sql`  
-   Output: `week_start_date, revenue, wow_pct`  
-   Weekly revenue trend using Monday-based weeks with week-over-week change.
+**KPI #13 — Fulfillment Rate**  
+File: `kpi_13_fulfillment_rate.sql`  
+Output:  
+`order_date, fulfilled_orders, finalized_orders, fulfillment_rate_pct`
 
----
-
-### 💳 Payment & Mix
-
-4. **KPI #04 — Payment Type Mix**  
-   File: `kpi04_payment_type_mix.sql`  
-   Output: `payment_type, revenue, revenue_pct`  
-   Analyzes revenue composition by payment method.
+**KPI #14 — Order Failure Rate (Stockout Proxy)**  
+File: `kpi_14_shortage_rate.sql`  
+Output:  
+`order_date, shortage_orders, finalized_orders, shortage_rate_pct`
 
 ---
 
-### 🚚 Logistics & Delivery Performance
+### 📈 Volume & Revenue
 
-5. **KPI #05 — Delivery On-time Rate**  
-   File: `kpi_05_delivery_on_time_rate.sql`  
-   Output: `on_time_rate_pct`  
-   Measures delivery reliability using delivered orders only.
+**KPI #01 — Daily Order Count**  
+File: `kpi01_daily_order_count.sql`  
+Output: `order_date, daily_orders`
 
-6. **KPI #06 — Average Delivery Days**  
-   File: `kpi_06_average_delivery_days.sql`  
-   Output: `avg_delivery_days`  
-   Diagnostic KPI measuring average time from purchase to delivery.
+**KPI #02 — Daily Revenue**  
+File: `kpi02_daily_revenue.sql`  
+Output: `order_date, daily_revenue`
+
+**KPI #03 — Weekly Revenue Trend (WoW%)**  
+File: `kpi03_weekly_revenue_trend.sql`  
+Output:  
+`week_start_date, revenue, wow_pct`
 
 ---
 
-### 🛍 Merchandising (Category & Product)
+### 📊 Product & Order Analysis
 
-7. **KPI #07 — Category Revenue Top 10 (Allocated)**  
-   File: `kpi_07_category_revenue_top10_allocated.sql`  
-   Output: `category, category_revenue`
-   Revenue per category is computed using order-level revenue allocation.
-   Total order payments are proportionally distributed to categories based on their item-value share       within each order, ensuring a consistent revenue definition (SSOT) across all revenue KPIs.
-   Validation:
-   `SUM(allocated_category_revenue) = SUM(order_revenue)`
+**KPI #07 — Category Revenue Top 10**  
+File: `kpi_07_category_revenue_top10_allocated.sql`  
+Output:  
+`category, category_revenue`
 
-8. **KPI #08 — Units Sold by Product (Ranked)**  
-   File: `kpi_08_units_sold_by_product_ranked.sql`  
-   Output: `product_id, units_sold`  
-   Volume-based KPI listing all products with their units sold in the selected period, sorted by         sales volume, independent of revenue or price effects.
-   
+**KPI #08 — Units Sold by Product**  
+File: `kpi_08_units_sold_by_product_ranked.sql`  
+Output:  
+`product_id, units_sold`
+
 ---
 
-### 🧮 Price Bucket Analysis (Set KPIs: #09–#11)
+### 📊 Supporting KPIs
 
-These KPIs share the **same price bucket definition** and are designed
-to be interpreted together:
+**KPI #04 — Payment Type Mix**  
+File: `kpi04_payment_type_mix.sql`
 
-- #09 shows where orders concentrate
-- #10 shows where revenue concentrates
-- #11 shows efficiency (AOV) within each segment
+**KPI #09 — Order Mix by Price Bucket**  
+File: `kpi_09_order_mix_by_price_bucket.sql`
 
-9. **KPI #09 — Order Mix by Price Bucket**  
-   File: `kpi_09_order_mix_by_price_bucket.sql`  
-   Output: `price_bucket, order_pct`
+**KPI #10 — Revenue Mix by Price Bucket**  
+File: `kpi_10_revenue_mix_by_price_bucket.sql`
 
-10. **KPI #10 — Revenue Mix by Price Bucket**  
-    File: `kpi_10_revenue_mix_by_price_bucket.sql`  
-    Output: `price_bucket, revenue_pct`
-
-11. **KPI #11 — AOV by Price Bucket**  
-    File: `kpi_11_aov_by_price_bucket.sql`  
-    Output: `price_bucket, aov`
+**KPI #11 — AOV by Price Bucket**  
+File: `kpi_11_aov_by_price_bucket.sql`
 
 ---
 
 ### 🔁 Customer Retention
 
-12. **KPI #12 — Repeat Purchase Retention (30/60/90D)**  
-    File: `kpi_12_repeat_purchase_retention_30_60_90d.sql`  
-    Output: `window_days, cohort_customers, retained_customers, retention_pct`
-
-Retention is calculated using a cohort defined by first delivered purchase, with repeat detection based on the second order timestamp.
-
-- Denominator: customers whose first delivered purchase falls within the cohort window and have sufficient observation period
-- Numerator: customers whose second delivered purchase occurs within the specified window after first_order_ts  
+**KPI #12 — Repeat Purchase Retention (30/60/90D)**  
+File: `kpi_12_repeat_purchase_retention_30_60_90d.sql`  
+Output:  
+`window_days, cohort_customers, retained_customers, retention_pct`
 
 ---
 
-### 📦 Fulfillment (Order Outcome)
+## 📝 Notes
 
-13. **KPI #13 — Fulfillment Rate**  
-    File: `kpi_13_fulfillment_rate.sql`  
-    Output: `order_date, fulfilled_orders, finalized_orders, fulfillment_rate_pct`
-
-Fulfillment rate is calculated based on finalized order outcomes.
-- Denominator: finalized orders (delivered, canceled, unavailable)
-- Numerator: fulfilled orders (delivered)
-
----
-
-### ⚠️ Shortage / Failure (Order Outcome)
-
-14. **KPI #14 — Shortage Rate (Order Failure Rate)**
-    File: 'kpi_14_shortage_rate.sql'
-    Output: 'order_date, shortage_orders, finalized_orders, shortage_rate_pct'
-
-Shortage rate is calculated based on finalized order outcomes.
-- Denominator: finalized orders (delivered, canceled, unavailable)
-- Numerator: failed orders (canceled, unavailable)
-
----
-
-## 📝 Notes for Reviewers
-
-- KPI definitions are consistent across time, revenue, and mix analyses.
-- Revenue is always anchored to recorded payments.
-- Price bucket KPIs are intentionally separated but designed as a single analytical set.
-- Retention is consolidated into one query to avoid duplicated logic.
+- All KPIs use **consistent SQL logic and metric definitions**
+- Revenue is based on **recorded payments (SSOT definition)**
+- Queries follow **production-style SQL structure**
+- Designed for **fulfillment, delivery, and operational performance analysis**
 
 ---
 
@@ -191,4 +139,4 @@ Shortage rate is calculated based on finalized order outcomes.
 
 📧 **Email:** sarahj0514@gmail.com  
 🔗 **LinkedIn:** https://www.linkedin.com/in/your-linkedin  
-💻 **GitHub:** https://github.com/your-username
+💻 **GitHub:** https://github.com/sarah-analytics
