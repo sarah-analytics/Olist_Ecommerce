@@ -2,7 +2,7 @@
 
 ## 👋 About
 
-**KR/EN bilingual Data Analyst** with hands-on inventory operations experience and strong SQL skills.
+**KR/EN bilingual Data Analyst with hands-on inventory operations experience and practical SQL skills demonstrated through production-style KPI development projects.**
 
 This project builds **production-style operational KPIs** to monitor fulfillment performance, delivery reliability, order failures, and revenue behavior.
 
@@ -37,7 +37,6 @@ These KPIs help identify fulfillment risks, delivery delays, and operational per
 
 ## 📁 Project Structure
 
-```bash
 sql/
 ├── int/     # intermediate tables (cleaned and standardized)
 ├── kpi/     # production KPI queries
