@@ -2,9 +2,9 @@
 
 ## 👋 About
 
-**KR/EN bilingual Data Analyst with hands-on inventory operations experience and practical SQL skills demonstrated through production-style KPI development projects.**
+**KR/EN bilingual Supply Chain & Inventory Operations professional with practical SQL skills demonstrated through production-style operational KPI development projects.**
 
-This project builds **production-style operational KPIs** to monitor fulfillment performance, delivery reliability, order failures, and revenue behavior.
+This project builds **production-style operational KPIs** to monitor fulfillment performance, delivery reliability, order failures, revenue trends, and inventory performance.
 
 Built using the public **Olist e-commerce dataset**, simulating real-world order, payment, inventory, and fulfillment workflows.
 
@@ -137,6 +137,5 @@ Output:
 
 ## 📩 Contact
 
-📧 **Email:** sarahj0514@gmail.com  
-🔗 **LinkedIn:** https://www.linkedin.com/in/your-linkedin  
-💻 **GitHub:** https://github.com/sarah-analytics
+📧 **Email:** sarahj0514@gmail.com
+💻 **GitHub:** https://github.com/sarah-analytics/Olist_Ecommerce
