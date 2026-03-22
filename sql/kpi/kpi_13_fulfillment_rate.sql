@@ -2,7 +2,7 @@
    KPI #13 — Fulfillment Rate (Order-Level)
 
    Type         : Base
-   Description  : Percentage of finalized orders successfully fulfilled.
+   Description  : Percentage of finalized orders that were successfully fulfilled.
                   Fulfillment success is defined as orders with 'delivered' status.
 
    Numerator    : Orders with order_status = 'delivered'
@@ -14,8 +14,8 @@
    Output       : order_date, fulfilled_orders, finalized_orders, fulfillment_rate_pct
 
    Notes        :
-     - Order-level fulfillment proxy based on final order outcome.
-     - Excludes in-progress statuses: created, approved, invoiced, processing, shipped
+     - Uses final order outcome to measure fulfillment performance.
+     - Excludes in-progress statuses (created, approved, invoiced, processing, shipped).
      - fulfillment_rate_pct = fulfilled_orders / finalized_orders * 100
    ========================================================= */
 
@@ -23,40 +23,30 @@ WITH params AS (
     SELECT
         TIMESTAMP('2017-01-01 00:00:00') AS start_ts,
         TIMESTAMP('2018-01-01 00:00:00') AS end_ts
-),
-finalized_orders AS (
-    -- Finalized orders only (success or failure outcome known)
-    SELECT
-        DATE(order_purchase_timestamp) AS order_date,
-        order_id,
-        order_status
-    FROM orders
-    WHERE order_purchase_timestamp >= (SELECT start_ts FROM params)
-      AND order_purchase_timestamp <  (SELECT end_ts   FROM params)
-      AND order_status IN ('delivered', 'canceled', 'unavailable')
-),
-daily AS (
-    SELECT
-        order_date,
-
-        -- Numerator: fulfilled orders
-        COUNT(CASE WHEN order_status = 'delivered' THEN 1 END)
-            AS fulfilled_orders,
-
-        -- Denominator: finalized orders
-        COUNT(*) AS finalized_orders
-
-    FROM finalized_orders
-    GROUP BY order_date
 )
+
 SELECT
-    order_date,
-    fulfilled_orders,
-    finalized_orders,
+    DATE(o.order_purchase_timestamp) AS order_date,  -- day grain
+
+    -- Numerator: successfully fulfilled orders
+    COUNT(CASE WHEN o.order_status = 'delivered' THEN 1 END)
+        AS fulfilled_orders,
+
+    -- Denominator: finalized orders only
+    COUNT(*) AS finalized_orders,
 
     -- Fulfillment rate (%)
-    fulfilled_orders / NULLIF(finalized_orders, 0) * 100.0
-        AS fulfillment_rate_pct
+    COUNT(CASE WHEN o.order_status = 'delivered' THEN 1 END)
+        / NULLIF(COUNT(*), 0) * 100.0 AS fulfillment_rate_pct
 
-FROM daily
+FROM orders AS o
+
+-- Apply date filter
+WHERE o.order_purchase_timestamp >= (SELECT start_ts FROM params)
+  AND o.order_purchase_timestamp <  (SELECT end_ts   FROM params)
+
+-- Keep only finalized outcomes
+  AND o.order_status IN ('delivered', 'canceled', 'unavailable')
+
+GROUP BY DATE(o.order_purchase_timestamp)
 ORDER BY order_date;
